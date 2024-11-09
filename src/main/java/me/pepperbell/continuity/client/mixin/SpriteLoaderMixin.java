@@ -25,6 +25,7 @@ import me.pepperbell.continuity.client.resource.SpriteLoaderStitchContext;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteContents;
 import net.minecraft.client.texture.SpriteLoader;
+import net.minecraft.client.texture.SpriteOpener;
 import net.minecraft.util.Identifier;
 
 @Mixin(SpriteLoader.class)
@@ -33,8 +34,8 @@ abstract class SpriteLoaderMixin {
 	@Final
 	private Identifier id;
 
-	@ModifyArg(method = "method_47661(Lnet/minecraft/resource/ResourceManager;Lnet/minecraft/util/Identifier;ILjava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;", at = @At(value = "INVOKE", target = "Ljava/util/concurrent/CompletableFuture;supplyAsync(Ljava/util/function/Supplier;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;", ordinal = 0), index = 0)
-	private Supplier<List<Supplier<SpriteContents>>> continuity$modifySupplier(Supplier<List<Supplier<SpriteContents>>> supplier) {
+	@ModifyArg(method = "load(Lnet/minecraft/resource/ResourceManager;Lnet/minecraft/util/Identifier;ILjava/util/concurrent/Executor;Ljava/util/Collection;)Ljava/util/concurrent/CompletableFuture;", at = @At(value = "INVOKE", target = "Ljava/util/concurrent/CompletableFuture;supplyAsync(Ljava/util/function/Supplier;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;", ordinal = 0), index = 0)
+	private Supplier<List<Function<SpriteOpener, SpriteContents>>> continuity$modifySupplier(Supplier<List<Function<SpriteOpener, SpriteContents>>> supplier) {
 		SpriteLoaderLoadContext context = SpriteLoaderLoadContext.THREAD_LOCAL.get();
 		if (context != null) {
 			CompletableFuture<@Nullable Set<Identifier>> extraIdsFuture = context.getExtraIdsFuture(id);
@@ -43,7 +44,7 @@ abstract class SpriteLoaderMixin {
 				return () -> {
 					AtlasLoaderInitContext.THREAD_LOCAL.set(extraIdsFuture::join);
 					AtlasLoaderLoadContext.THREAD_LOCAL.set(emissiveControl::setEmissiveIdMap);
-					List<Supplier<SpriteContents>> list = supplier.get();
+					List<Function<SpriteOpener, SpriteContents>> list = supplier.get();
 					AtlasLoaderInitContext.THREAD_LOCAL.set(null);
 					AtlasLoaderLoadContext.THREAD_LOCAL.set(null);
 					return list;
@@ -51,7 +52,7 @@ abstract class SpriteLoaderMixin {
 			}
 			return () -> {
 				AtlasLoaderInitContext.THREAD_LOCAL.set(extraIdsFuture::join);
-				List<Supplier<SpriteContents>> list = supplier.get();
+				List<Function<SpriteOpener, SpriteContents>> list = supplier.get();
 				AtlasLoaderInitContext.THREAD_LOCAL.set(null);
 				return list;
 			};
@@ -59,7 +60,7 @@ abstract class SpriteLoaderMixin {
 		return supplier;
 	}
 
-	@ModifyArg(method = "method_47661(Lnet/minecraft/resource/ResourceManager;Lnet/minecraft/util/Identifier;ILjava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;", at = @At(value = "INVOKE", target = "Ljava/util/concurrent/CompletableFuture;thenApply(Ljava/util/function/Function;)Ljava/util/concurrent/CompletableFuture;", ordinal = 0), index = 0)
+	@ModifyArg(method = "load(Lnet/minecraft/resource/ResourceManager;Lnet/minecraft/util/Identifier;ILjava/util/concurrent/Executor;Ljava/util/Collection;)Ljava/util/concurrent/CompletableFuture;", at = @At(value = "INVOKE", target = "Ljava/util/concurrent/CompletableFuture;thenApply(Ljava/util/function/Function;)Ljava/util/concurrent/CompletableFuture;", ordinal = 0), index = 0)
 	private Function<List<SpriteContents>, SpriteLoader.StitchResult> continuity$modifyFunction(Function<List<SpriteContents>, SpriteLoader.StitchResult> function) {
 		SpriteLoaderLoadContext context = SpriteLoaderLoadContext.THREAD_LOCAL.get();
 		if (context != null) {
@@ -90,7 +91,7 @@ abstract class SpriteLoaderMixin {
 		return function;
 	}
 
-	@Inject(method = "method_47663(Ljava/util/List;ILjava/util/concurrent/Executor;)Lnet/minecraft/client/texture/SpriteLoader$StitchResult;", at = @At("RETURN"))
+	@Inject(method = "stitch(Ljava/util/List;ILjava/util/concurrent/Executor;)Lnet/minecraft/client/texture/SpriteLoader$StitchResult;", at = @At("RETURN"))
 	private void continuity$onReturnStitch(List<SpriteContents> spriteContentsList, int mipmapLevels, Executor executor, CallbackInfoReturnable<SpriteLoader.StitchResult> cir) {
 		SpriteLoaderStitchContext context = SpriteLoaderStitchContext.THREAD_LOCAL.get();
 		if (context != null) {

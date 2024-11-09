@@ -14,6 +14,7 @@ import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
+import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
@@ -34,7 +35,7 @@ public class EmissiveBakedModel extends ForwardingBakedModel {
 		EMISSIVE_MATERIALS = new RenderMaterial[blendModes.length];
 		MaterialFinder finder = RenderUtil.getMaterialFinder();
 		for (BlendMode blendMode : blendModes) {
-			EMISSIVE_MATERIALS[blendMode.ordinal()] = finder.emissive(0, true).disableDiffuse(0, true).disableAo(0, true).blendMode(0, blendMode).find();
+			EMISSIVE_MATERIALS[blendMode.ordinal()] = finder.emissive(true).disableDiffuse(true).ambientOcclusion(TriState.FALSE).blendMode(blendMode).find();
 		}
 
 		DEFAULT_EMISSIVE_MATERIAL = EMISSIVE_MATERIALS[BlendMode.DEFAULT.ordinal()];
@@ -65,14 +66,14 @@ public class EmissiveBakedModel extends ForwardingBakedModel {
 		}
 
 		MeshBuilder meshBuilder = container.meshBuilder;
-		quadTransform.prepare(meshBuilder.getEmitter(), blockView, state, pos, ContinuityConfig.INSTANCE.useManualCulling.get());
+		quadTransform.prepare(meshBuilder.getEmitter(), blockView, state, pos, context, ContinuityConfig.INSTANCE.useManualCulling.get());
 
 		context.pushTransform(quadTransform);
 		super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
 		context.popTransform();
 
 		if (quadTransform.didEmit()) {
-			context.meshConsumer().accept(meshBuilder.build());
+			meshBuilder.build().outputTo(context.getEmitter());
 		}
 		quadTransform.reset();
 	}
@@ -104,7 +105,7 @@ public class EmissiveBakedModel extends ForwardingBakedModel {
 		context.popTransform();
 
 		if (quadTransform.didEmit()) {
-			context.meshConsumer().accept(meshBuilder.build());
+			meshBuilder.build().outputTo(context.getEmitter());
 		}
 		quadTransform.reset();
 	}
@@ -118,12 +119,11 @@ public class EmissiveBakedModel extends ForwardingBakedModel {
 	}
 
 	protected static class EmissiveBlockQuadTransform implements RenderContext.QuadTransform {
-		protected final CullingCache cullingCache = new CullingCache();
-
 		protected QuadEmitter emitter;
 		protected BlockRenderView blockView;
 		protected BlockState state;
 		protected BlockPos pos;
+		protected RenderContext renderContext;
 		protected boolean useManualCulling;
 
 		protected boolean active;
@@ -133,16 +133,16 @@ public class EmissiveBakedModel extends ForwardingBakedModel {
 
 		@Override
 		public boolean transform(MutableQuadView quad) {
-			if (useManualCulling && cullingCache.shouldCull(quad, blockView, pos, state)) {
+			if (useManualCulling && renderContext.isFaceCulled(quad.cullFace())) {
 				return false;
 			}
 
-			Sprite sprite = RenderUtil.getSpriteFinder().find(quad, 0);
+			Sprite sprite = RenderUtil.getSpriteFinder().find(quad);
 			Sprite emissiveSprite = EmissiveSpriteApi.get().getEmissiveSprite(sprite);
 			if (emissiveSprite != null) {
-				quad.copyTo(emitter);
+				emitter.copyFrom(quad);
 
-				BlendMode blendMode = RenderUtil.getBlendMode(quad);
+				BlendMode blendMode = quad.material().blendMode();
 				RenderMaterial emissiveMaterial;
 				if (blendMode == BlendMode.DEFAULT) {
 					if (calculateDefaultLayer) {
@@ -177,19 +177,18 @@ public class EmissiveBakedModel extends ForwardingBakedModel {
 			return didEmit;
 		}
 
-		public void prepare(QuadEmitter emitter, BlockRenderView blockView, BlockState state, BlockPos pos, boolean useManualCulling) {
+		public void prepare(QuadEmitter emitter, BlockRenderView blockView, BlockState state, BlockPos pos, RenderContext renderContext, boolean useManualCulling) {
 			this.emitter = emitter;
 			this.blockView = blockView;
 			this.state = state;
 			this.pos = pos;
+			this.renderContext = renderContext;
 			this.useManualCulling = useManualCulling;
 
 			active = true;
 			didEmit = false;
 			calculateDefaultLayer = true;
 			isDefaultLayerSolid = false;
-
-			cullingCache.prepare();
 		}
 
 		public void reset() {
@@ -197,6 +196,7 @@ public class EmissiveBakedModel extends ForwardingBakedModel {
 			blockView = null;
 			state = null;
 			pos = null;
+			renderContext = null;
 			useManualCulling = false;
 
 			active = false;
@@ -211,10 +211,10 @@ public class EmissiveBakedModel extends ForwardingBakedModel {
 
 		@Override
 		public boolean transform(MutableQuadView quad) {
-			Sprite sprite = RenderUtil.getSpriteFinder().find(quad, 0);
+			Sprite sprite = RenderUtil.getSpriteFinder().find(quad);
 			Sprite emissiveSprite = EmissiveSpriteApi.get().getEmissiveSprite(sprite);
 			if (emissiveSprite != null) {
-				quad.copyTo(emitter);
+				emitter.copyFrom(quad);
 				emitter.material(DEFAULT_EMISSIVE_MATERIAL);
 				QuadUtil.interpolate(emitter, sprite, emissiveSprite);
 				emitter.emit();

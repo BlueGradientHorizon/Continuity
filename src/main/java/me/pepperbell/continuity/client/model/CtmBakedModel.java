@@ -65,13 +65,13 @@ public class CtmBakedModel extends ForwardingBakedModel {
 		// especially if there is an actual use case for it.
 		BlockState appearanceState = state.getAppearance(blockView, pos, Direction.DOWN, state, pos);
 
-		quadTransform.prepare(blockView, appearanceState, state, pos, randomSupplier, ContinuityConfig.INSTANCE.useManualCulling.get(), getSliceFunc(appearanceState));
+		quadTransform.prepare(blockView, appearanceState, state, pos, randomSupplier, context, ContinuityConfig.INSTANCE.useManualCulling.get(), getSliceFunc(appearanceState));
 
 		context.pushTransform(quadTransform);
 		super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
 		context.popTransform();
 
-		quadTransform.processingContext.accept(context);
+		quadTransform.processingContext.outputTo(context.getEmitter());
 		quadTransform.reset();
 	}
 
@@ -102,13 +102,13 @@ public class CtmBakedModel extends ForwardingBakedModel {
 
 	protected static class CtmQuadTransform implements RenderContext.QuadTransform {
 		protected final ProcessingContextImpl processingContext = new ProcessingContextImpl();
-		protected final CullingCache cullingCache = new CullingCache();
 
 		protected BlockRenderView blockView;
 		protected BlockState appearanceState;
 		protected BlockState state;
 		protected BlockPos pos;
 		protected Supplier<Random> randomSupplier;
+		protected RenderContext renderContext;
 		protected boolean useManualCulling;
 		protected Function<Sprite, QuadProcessors.Slice> sliceFunc;
 
@@ -116,7 +116,7 @@ public class CtmBakedModel extends ForwardingBakedModel {
 
 		@Override
 		public boolean transform(MutableQuadView quad) {
-			if (useManualCulling && cullingCache.shouldCull(quad, blockView, pos, state)) {
+			if (useManualCulling && renderContext.isFaceCulled(quad.cullFace())) {
 				return false;
 			}
 
@@ -131,7 +131,7 @@ public class CtmBakedModel extends ForwardingBakedModel {
 		}
 
 		protected Boolean transformOnce(MutableQuadView quad, int pass) {
-			Sprite sprite = RenderUtil.getSpriteFinder().find(quad, 0);
+			Sprite sprite = RenderUtil.getSpriteFinder().find(quad);
 			QuadProcessors.Slice slice = sliceFunc.apply(sprite);
 			QuadProcessor[] processors = pass == 0 ? slice.processors() : slice.multipassProcessors();
 			for (QuadProcessor processor : processors) {
@@ -156,19 +156,19 @@ public class CtmBakedModel extends ForwardingBakedModel {
 			return active;
 		}
 
-		public void prepare(BlockRenderView blockView, BlockState appearanceState, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, boolean useManualCulling, Function<Sprite, QuadProcessors.Slice> sliceFunc) {
+		public void prepare(BlockRenderView blockView, BlockState appearanceState, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext renderContext, boolean useManualCulling, Function<Sprite, QuadProcessors.Slice> sliceFunc) {
 			this.blockView = blockView;
 			this.appearanceState = appearanceState;
 			this.state = state;
 			this.pos = pos;
 			this.randomSupplier = randomSupplier;
+			this.renderContext = renderContext;
 			this.useManualCulling = useManualCulling;
 			this.sliceFunc = sliceFunc;
 
 			active = true;
 
 			processingContext.prepare();
-			cullingCache.prepare();
 		}
 
 		public void reset() {
@@ -177,6 +177,7 @@ public class CtmBakedModel extends ForwardingBakedModel {
 			state = null;
 			pos = null;
 			randomSupplier = null;
+			renderContext = null;
 			useManualCulling = false;
 			sliceFunc = null;
 

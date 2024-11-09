@@ -80,12 +80,6 @@ public class BasicConnectingCtmProperties extends BaseCtmProperties {
 				return quadSprite == SpriteCalculator.getSprite(otherAppearanceState, face);
 			}
 		},
-		MATERIAL {
-			@Override
-			public boolean shouldConnect(BlockRenderView blockView, BlockState appearanceState, BlockState state, BlockPos pos, BlockState otherAppearanceState, BlockState otherState, BlockPos otherPos, Direction face, Sprite quadSprite) {
-				return appearanceState.getMaterial() == otherAppearanceState.getMaterial();
-			}
-		},
 		STATE {
 			@Override
 			public boolean shouldConnect(BlockRenderView blockView, BlockState appearanceState, BlockState state, BlockPos pos, BlockState otherAppearanceState, BlockState otherState, BlockPos otherPos, Direction face, Sprite quadSprite) {

@@ -4,6 +4,9 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.model.ModelBaker;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -16,7 +19,6 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
 import me.pepperbell.continuity.client.resource.BakedModelManagerReloadExtension;
 import net.minecraft.client.render.model.BakedModelManager;
-import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.SpriteAtlasManager;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloader;
@@ -29,8 +31,8 @@ abstract class BakedModelManagerMixin {
 	@Nullable
 	private volatile BakedModelManagerReloadExtension continuity$reloadExtension;
 
-	@Inject(method = "reload(Lnet/minecraft/resource/ResourceReloader$Synchronizer;Lnet/minecraft/resource/ResourceManager;Lnet/minecraft/util/profiler/Profiler;Lnet/minecraft/util/profiler/Profiler;Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;", at = @At("HEAD"))
-	private void continuity$onHeadReload(ResourceReloader.Synchronizer synchronizer, ResourceManager resourceManager, Profiler prepareProfiler, Profiler applyProfiler, Executor prepareExecutor, Executor applyExecutor, CallbackInfoReturnable<CompletableFuture<Void>> cir) {
+	@Inject(method = "reload", at = @At("HEAD"))
+	private void continuity$onHeadReload(ResourceReloader.Synchronizer synchronizer, ResourceManager resourceManager, Executor prepareExecutor, Executor applyExecutor, CallbackInfoReturnable<CompletableFuture<Void>> cir) {
 		continuity$reloadExtension = new BakedModelManagerReloadExtension(resourceManager, prepareExecutor);
 
 		BakedModelManagerReloadExtension reloadExtension = continuity$reloadExtension;
@@ -39,7 +41,7 @@ abstract class BakedModelManagerMixin {
 		}
 	}
 
-	@Inject(method = "reload(Lnet/minecraft/resource/ResourceReloader$Synchronizer;Lnet/minecraft/resource/ResourceManager;Lnet/minecraft/util/profiler/Profiler;Lnet/minecraft/util/profiler/Profiler;Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;", at = @At("RETURN"))
+	@Inject(method = "reload", at = @At("RETURN"))
 	private void continuity$onReturnReload(CallbackInfoReturnable<CompletableFuture<Void>> cir) {
 		BakedModelManagerReloadExtension reloadExtension = continuity$reloadExtension;
 		if (reloadExtension != null) {
@@ -47,16 +49,16 @@ abstract class BakedModelManagerMixin {
 		}
 	}
 
-	@ModifyReturnValue(method = "reload(Lnet/minecraft/resource/ResourceReloader$Synchronizer;Lnet/minecraft/resource/ResourceManager;Lnet/minecraft/util/profiler/Profiler;Lnet/minecraft/util/profiler/Profiler;Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;", at = @At("RETURN"))
+	@ModifyReturnValue(method = "reload", at = @At("RETURN"))
 	private CompletableFuture<Void> continuity$modifyReturnReload(CompletableFuture<Void> original) {
 		return original.thenRun(() -> continuity$reloadExtension = null);
 	}
 
-	@Inject(method = "bake(Lnet/minecraft/util/profiler/Profiler;Ljava/util/Map;Lnet/minecraft/client/render/model/ModelLoader;)Lnet/minecraft/client/render/model/BakedModelManager$BakingResult;", at = @At("HEAD"))
-	private void continuity$onHeadBake(Profiler profiler, Map<Identifier, SpriteAtlasManager.AtlasPreparation> preparations, ModelLoader modelLoader, CallbackInfoReturnable<?> cir) {
+	@Inject(method = "bake", at = @At("HEAD"))
+	private void continuity$onHeadBake(Profiler profiler, Map<Identifier, SpriteAtlasManager.AtlasPreparation> preparations, ModelBaker modelBaker, Object2IntMap<BlockState> modelGroups, CallbackInfoReturnable<?> cir) {
 		BakedModelManagerReloadExtension reloadExtension = continuity$reloadExtension;
 		if (reloadExtension != null) {
-			reloadExtension.beforeBaking(preparations, modelLoader);
+			reloadExtension.beforeBaking(preparations, modelBaker);
 		}
 	}
 

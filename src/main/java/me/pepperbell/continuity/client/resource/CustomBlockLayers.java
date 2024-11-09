@@ -23,7 +23,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EmptyBlockView;
 
 public final class CustomBlockLayers {
-	public static final Identifier LOCATION = new Identifier("optifine/block.properties");
+	public static final Identifier LOCATION = Identifier.ofVanilla("optifine/block.properties");
 
 	@SuppressWarnings("unchecked")
 	private static final Predicate<BlockState>[] EMPTY_LAYER_PREDICATES = new Predicate[BlockLayer.VALUES.length];
@@ -42,7 +42,7 @@ public final class CustomBlockLayers {
 	@Nullable
 	public static RenderLayer getLayer(BlockState state) {
 		if (!disableSolidCheck) {
-			if (state.isOpaqueFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN)) {
+			if (state.isOpaqueFullCube()) {
 				return null;
 			}
 		}
@@ -69,9 +69,9 @@ public final class CustomBlockLayers {
 			try (InputStream inputStream = resource.getInputStream()) {
 				Properties properties = new Properties();
 				properties.load(inputStream);
-				reload(properties, LOCATION, resource.getResourcePackName());
+				reload(properties, LOCATION, resource.getPackId());
 			} catch (IOException e) {
-				ContinuityClient.LOGGER.error("Failed to load custom block layers from file '" + LOCATION + "' from pack '" + resource.getResourcePackName() + "'", e);
+				ContinuityClient.LOGGER.error("Failed to load custom block layers from file '" + LOCATION + "' from pack '" + resource.getPackId() + "'", e);
 			}
 		}
 	}

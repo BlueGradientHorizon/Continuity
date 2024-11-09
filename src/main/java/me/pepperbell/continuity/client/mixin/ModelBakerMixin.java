@@ -1,15 +1,15 @@
 package me.pepperbell.continuity.client.mixin;
 
+import net.minecraft.client.render.model.ModelBaker;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-import me.pepperbell.continuity.client.mixinterface.ModelLoaderExtension;
+import me.pepperbell.continuity.client.mixinterface.ModelBakerExtension;
 import me.pepperbell.continuity.client.resource.ModelWrappingHandler;
-import net.minecraft.client.render.model.ModelLoader;
 
-@Mixin(ModelLoader.class)
-abstract class ModelLoaderMixin implements ModelLoaderExtension {
+@Mixin(ModelBaker.class)
+abstract class ModelBakerMixin implements ModelBakerExtension {
 	@Unique
 	@Nullable
 	private ModelWrappingHandler continuity$modelWrappingHandler;

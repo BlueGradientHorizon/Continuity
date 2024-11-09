@@ -37,9 +37,9 @@ import me.pepperbell.continuity.client.properties.overlay.RandomOverlayCtmProper
 import me.pepperbell.continuity.client.properties.overlay.RepeatOverlayCtmProperties;
 import me.pepperbell.continuity.client.properties.overlay.StandardOverlayCtmProperties;
 import me.pepperbell.continuity.client.resource.CustomBlockLayers;
+import me.pepperbell.continuity.client.resource.ModelWrappingHandler;
 import me.pepperbell.continuity.client.util.RenderUtil;
 import me.pepperbell.continuity.client.util.biome.BiomeHolderManager;
-import me.pepperbell.continuity.client.util.biome.BiomeRetriever;
 import me.pepperbell.continuity.impl.client.ProcessingDataKeyRegistryImpl;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
@@ -57,8 +57,8 @@ public class ContinuityClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		ProcessingDataKeyRegistryImpl.INSTANCE.init();
 		BiomeHolderManager.init();
-		BiomeRetriever.init();
 		ProcessingDataKeys.init();
+		ModelWrappingHandler.init();
 		RenderUtil.ReloadListener.init();
 		CustomBlockLayers.ReloadListener.init();
 
@@ -268,6 +268,6 @@ public class ContinuityClient implements ClientModInitializer {
 	}
 
 	public static Identifier asId(String path) {
-		return new Identifier(ID, path);
+		return Identifier.of(ID, path);
 	}
 }

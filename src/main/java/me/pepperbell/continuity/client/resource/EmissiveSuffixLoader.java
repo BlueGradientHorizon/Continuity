@@ -13,7 +13,7 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 
 public final class EmissiveSuffixLoader {
-	public static final Identifier LOCATION = new Identifier("optifine/emissive.properties");
+	public static final Identifier LOCATION = Identifier.ofVanilla("optifine/emissive.properties");
 
 	private static String emissiveSuffix;
 

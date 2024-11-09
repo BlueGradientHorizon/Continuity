@@ -64,9 +64,9 @@ public class OverlayPropertiesSection {
 			Identifier blockId;
 			try {
 				if (parts.length == 1 || parts[1].contains("=")) {
-					blockId = new Identifier(parts[0]);
+					blockId = Identifier.ofVanilla(parts[0]);
 				} else {
-					blockId = new Identifier(parts[0], parts[1]);
+					blockId = Identifier.of(parts[0], parts[1]);
 				}
 			} catch (InvalidIdentifierException e) {
 				ContinuityClient.LOGGER.warn("Invalid 'tintBlock' value '" + tintBlockStr + "' in file '" + resourceId + "' in pack '" + packId + "'", e);

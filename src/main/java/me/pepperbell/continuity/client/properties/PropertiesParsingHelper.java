@@ -12,8 +12,6 @@ import java.util.function.Predicate;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.Nullable;
 
-import com.google.common.collect.ImmutableMap;
-
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -99,7 +97,7 @@ public final class PropertiesParsingHelper {
 					}
 
 					try {
-						set.add(new Identifier(namespace, path));
+						set.add(Identifier.of(namespace, path));
 					} catch (InvalidIdentifierException e) {
 						ContinuityClient.LOGGER.warn("Invalid '" + propertyKey + "' element '" + matchTileStr + "' at index " + i + " in file '" + fileLocation + "' in pack '" + packId + "'", e);
 					}
@@ -139,10 +137,10 @@ public final class PropertiesParsingHelper {
 					int startIndex;
 					try {
 						if (parts.length == 1 || parts[1].contains("=")) {
-							blockId = new Identifier(parts[0]);
+							blockId = Identifier.ofVanilla(parts[0]);
 							startIndex = 1;
 						} else {
-							blockId = new Identifier(parts[0], parts[1]);
+							blockId = Identifier.of(parts[0], parts[1]);
 							startIndex = 2;
 						}
 					} catch (InvalidIdentifierException e) {
@@ -242,7 +240,7 @@ public final class PropertiesParsingHelper {
 						}
 
 						predicateMap.put(block, state -> {
-							ImmutableMap<Property<?>, Comparable<?>> targetValueMap = state.getEntries();
+							Map<Property<?>, Comparable<?>> targetValueMap = state.getEntries();
 							for (Map.Entry<Property<?>, ObjectOpenHashSet<Comparable<?>>> entry : entryArray) {
 								Comparable<?> targetValue = targetValueMap.get(entry.getKey());
 								if (targetValue != null) {

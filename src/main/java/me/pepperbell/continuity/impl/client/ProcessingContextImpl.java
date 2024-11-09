@@ -13,7 +13,6 @@ import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MeshBuilder;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
-import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 
 public class ProcessingContextImpl implements QuadProcessor.ProcessingContext {
 	protected final List<Consumer<QuadEmitter>> emitterConsumers = new ObjectArrayList<>();
@@ -61,23 +60,21 @@ public class ProcessingContextImpl implements QuadProcessor.ProcessingContext {
 		return (T) processingData[key.getRawId()];
 	}
 
-	public void accept(RenderContext context) {
+	public void outputTo(QuadEmitter emitter) {
 		if (!emitterConsumers.isEmpty()) {
-			QuadEmitter quadEmitter = context.getEmitter();
 			int amount = emitterConsumers.size();
 			for (int i = 0; i < amount; i++) {
-				emitterConsumers.get(i).accept(quadEmitter);
+				emitterConsumers.get(i).accept(emitter);
 			}
 		}
 		if (!meshes.isEmpty()) {
-			Consumer<Mesh> meshConsumer = context.meshConsumer();
 			int amount = meshes.size();
 			for (int i = 0; i < amount; i++) {
-				meshConsumer.accept(meshes.get(i));
+				meshes.get(i).outputTo(emitter);
 			}
 		}
 		if (hasExtraQuads) {
-			context.meshConsumer().accept(meshBuilder.build());
+			meshBuilder.build().outputTo(emitter);
 		}
 	}
 

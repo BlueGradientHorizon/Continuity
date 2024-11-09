@@ -7,12 +7,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import net.minecraft.client.render.model.ModelBaker;
 import org.jetbrains.annotations.Nullable;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import me.pepperbell.continuity.client.mixinterface.ModelLoaderExtension;
+import me.pepperbell.continuity.client.mixinterface.ModelBakerExtension;
 import me.pepperbell.continuity.client.model.QuadProcessors;
-import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.SpriteAtlasManager;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
@@ -39,7 +39,7 @@ public class BakedModelManagerReloadExtension {
 		SpriteLoaderLoadContext.THREAD_LOCAL.set(null);
 	}
 
-	public void beforeBaking(Map<Identifier, SpriteAtlasManager.AtlasPreparation> preparations, ModelLoader modelLoader) {
+	public void beforeBaking(Map<Identifier, SpriteAtlasManager.AtlasPreparation> preparations, ModelBaker modelBaker) {
 		CtmPropertiesLoader.LoadingResult result = ctmLoadingResultFuture.join();
 
 		List<QuadProcessors.ProcessorHolder> processorHolders = result.createProcessorHolders(spriteId -> {
@@ -54,7 +54,7 @@ public class BakedModelManagerReloadExtension {
 		this.processorHolders = processorHolders;
 
 		ModelWrappingHandler wrappingHandler = ModelWrappingHandler.create(!processorHolders.isEmpty(), wrapEmissiveModels.get());
-		((ModelLoaderExtension) modelLoader).continuity$setModelWrappingHandler(wrappingHandler);
+		((ModelBakerExtension) modelBaker).continuity$setModelWrappingHandler(wrappingHandler);
 	}
 
 	public void apply() {

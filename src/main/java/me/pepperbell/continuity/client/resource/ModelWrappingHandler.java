@@ -1,16 +1,21 @@
 package me.pepperbell.continuity.client.resource;
 
+import net.minecraft.client.render.model.MissingModel;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnknownNullability;
 
 import com.google.common.collect.ImmutableMap;
 
+import me.pepperbell.continuity.client.mixinterface.ModelBakerExtension;
 import me.pepperbell.continuity.client.model.CtmBakedModel;
 import me.pepperbell.continuity.client.model.EmissiveBakedModel;
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelModifier;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
@@ -47,11 +52,11 @@ public class ModelWrappingHandler {
 		return builder.build();
 	}
 
-	public BakedModel wrap(@Nullable BakedModel model, Identifier modelId) {
-		if (model != null && !model.isBuiltin() && !modelId.equals(ModelLoader.MISSING_ID)) {
+	public BakedModel wrap(@Nullable BakedModel model, @UnknownNullability Identifier resourceId, @UnknownNullability ModelIdentifier topLevelId) {
+		if (model != null && !model.isBuiltin() && (resourceId == null || !resourceId.equals(MissingModel.ID))) {
 			if (wrapCtm) {
-				if (modelId instanceof ModelIdentifier) {
-					BlockState state = blockStateModelIds.get(modelId);
+				if (topLevelId != null) {
+					BlockState state = blockStateModelIds.get(topLevelId);
 					if (state != null) {
 						model = new CtmBakedModel(model, state);
 					}
@@ -62,5 +67,21 @@ public class ModelWrappingHandler {
 			}
 		}
 		return model;
+	}
+
+	@ApiStatus.Internal
+	public static void init() {
+		ModelLoadingPlugin.register(pluginCtx -> {
+			pluginCtx.modifyModelAfterBake().register(ModelModifier.WRAP_LAST_PHASE, (model, ctx) -> {
+				ModelWrappingHandler wrappingHandler = null;
+				if (ctx.baker() instanceof ModelBakerExtension extension) {
+					wrappingHandler = extension.continuity$getModelWrappingHandler();
+				}
+				if (wrappingHandler != null) {
+					return wrappingHandler.wrap(model, ctx.resourceId(), ctx.topLevelId());
+				}
+				return model;
+			});
+		});
 	}
 }
